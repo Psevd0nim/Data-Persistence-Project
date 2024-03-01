@@ -1,5 +1,7 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -12,6 +14,7 @@ public class MainManager : MonoBehaviour
 
     public Text ScoreText;
     public GameObject GameOverText;
+    public Text BestScore;
     
     private bool m_Started = false;
     private int m_Points;
@@ -36,6 +39,10 @@ public class MainManager : MonoBehaviour
                 brick.onDestroyed.AddListener(AddPoint);
             }
         }
+        if (GameObject.Find("MenuManager") != null)
+        {
+            BestScore.text = $"Best Score : {MenuManager.Instance.RecordPlayer} : {MenuManager.Instance.CurrentBestRecord}";
+        }
     }
 
     private void Update()
@@ -45,7 +52,7 @@ public class MainManager : MonoBehaviour
             if (Input.GetKeyDown(KeyCode.Space))
             {
                 m_Started = true;
-                float randomDirection = Random.Range(-1.0f, 1.0f);
+                float randomDirection = UnityEngine.Random.Range(-1.0f, 1.0f);
                 Vector3 forceDir = new Vector3(randomDirection, 1, 0);
                 forceDir.Normalize();
 
@@ -59,6 +66,8 @@ public class MainManager : MonoBehaviour
             {
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
             }
+            if (Input.GetKeyDown(KeyCode.Escape))
+                SceneManager.LoadScene(0);
         }
     }
 
@@ -72,5 +81,30 @@ public class MainManager : MonoBehaviour
     {
         m_GameOver = true;
         GameOverText.SetActive(true);
+        if (GameObject.Find("MenuManager") != null && MenuManager.Instance.CurrentBestRecord < m_Points)
+        {
+            BestScore.text = $"Best Score : {MenuManager.Instance.CurrentPlayer} : {m_Points}";
+            SaveData();
+        }
+    }
+
+    void SaveData()
+    {
+        var data = new BestRecord(MenuManager.Instance.CurrentPlayer, m_Points);
+        string json = JsonUtility.ToJson(data);
+        File.WriteAllText(Application.persistentDataPath + "/savefile.json", json);
+    }
+
+    [Serializable]
+    public class BestRecord
+    {
+        public int Score;
+        public string Name;
+
+        public BestRecord(string  name, int score)
+        {
+            Name = name;
+            Score = score;
+        }
     }
 }
